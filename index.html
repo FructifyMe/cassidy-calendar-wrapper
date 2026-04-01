@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cassidy Calendar Display</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
+        }
+
+        /*
+            CONFIGURATION
+            ─────────────
+            Change these two values to dial in your display:
+
+            --zoom: Controls how much of the calendar is visible.
+                    Lower = more content visible (zoomed out).
+                    0.55 means the calendar renders at 55% size,
+                    so you see ~180% of the original content area.
+                    Start at 0.55 and adjust up/down until all 31 days show.
+
+            --calendar-url: Your Smartsheet Calendar App PUBLISH link.
+                    NOT the browser URL. Go to Calendar App > Share > Publish > copy that URL.
+        */
+        :root {
+            --zoom: 0.55;
+        }
+
+        .calendar-container {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .calendar-container iframe {
+            border: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform: scale(var(--zoom));
+            transform-origin: 0 0;
+            width: calc(100vw / var(--zoom));
+            height: calc(100vh / var(--zoom));
+        }
+
+        /* Loading state while iframe loads */
+        .calendar-container::before {
+            content: 'Loading Calendar...';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #666;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 24px;
+            z-index: -1;
+        }
+
+        /*
+            QUICK ZOOM CONTROLS (for dialing in on-site)
+            Shows in bottom-right corner. Click +/- to adjust zoom live.
+            Once you find the right value, update --zoom above and remove
+            the controls div if you want a clean display.
+        */
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            user-select: none;
+        }
+
+        .controls button {
+            background: #444;
+            color: #fff;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .controls button:hover {
+            background: #666;
+        }
+
+        .controls .zoom-value {
+            min-width: 50px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .controls .hint {
+            font-size: 11px;
+            color: #999;
+            max-width: 140px;
+            line-height: 1.3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calendar-container">
+        <!--
+            PASTE YOUR SMARTSHEET CALENDAR APP PUBLISH URL BELOW
+
+            To get this URL:
+            1. Open Smartsheet Calendar App
+            2. Click the arrow (top-right)
+            3. Click Share
+            4. Toggle Publish ON
+            5. Copy the Publish link
+            6. Paste it in the src="" below
+        -->
+        <iframe
+            src="https://calendar.smartsheet.com/calendars/published/d1763a49-7a56-4b01-977b-bdd3847727ca"
+            allowfullscreen
+            loading="eager">
+        </iframe>
+    </div>
+
+    <!-- Live zoom controls - remove this div once you've dialed in the right zoom -->
+    <div class="controls" id="controls">
+        <button onclick="adjustZoom(-0.05)">−</button>
+        <span class="zoom-value" id="zoomDisplay">55%</span>
+        <button onclick="adjustZoom(0.05)">+</button>
+        <span class="hint">Adjust until all 31 days show, then update CSS</span>
+    </div>
+
+    <script>
+        let currentZoom = 0.55;
+
+        function adjustZoom(delta) {
+            currentZoom = Math.max(0.2, Math.min(1.0, currentZoom + delta));
+            currentZoom = Math.round(currentZoom * 100) / 100;
+
+            document.documentElement.style.setProperty('--zoom', currentZoom);
+            document.getElementById('zoomDisplay').textContent = Math.round(currentZoom * 100) + '%';
+        }
+
+        // Hide controls after 60 seconds of no interaction (for clean TV display)
+        let hideTimer;
+        function resetHideTimer() {
+            clearTimeout(hideTimer);
+            document.getElementById('controls').style.opacity = '1';
+            hideTimer = setTimeout(() => {
+                document.getElementById('controls').style.opacity = '0';
+            }, 60000);
+        }
+
+        document.addEventListener('mousemove', resetHideTimer);
+        document.addEventListener('click', resetHideTimer);
+        resetHideTimer();
+
+        // Auto-reload every 5 minutes to keep calendar fresh
+        setInterval(() => {
+            const iframe = document.querySelector('iframe');
+            iframe.src = iframe.src;
+        }, 300000);
+    </script>
+
+</body>
+</html>
